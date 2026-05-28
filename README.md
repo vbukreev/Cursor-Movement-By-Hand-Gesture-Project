@@ -4,12 +4,12 @@
 
 | Name | Email | Role |
 |------|-------|------|
-| Preksha Sharda | psharda3@myseneca.ca | Team Member |
-| Kunal | k63@myseneca.ca | Team Member |
-| Aditi | aditi2@myseneca.ca | Team Member |
-| Victoria Bukreev | vbukreev@myseneca.ca  | Team Member |
+| Preksha Sharda | psharda3@myseneca.ca | UI/UX & Documentation Developer |
+| Kunal | k63@myseneca.ca | Backend & Gesture Recognition Developer |
+| Aditi | aditi2@myseneca.ca | Testing & Integration Developer |
+| Victoria Bukreev | vbukreev@myseneca.ca | Project Lead & System Integration Developer |
 
-## Introduction
+## Project Description
 
 This repository contains the Capstone II implementation work for **AeroPoint**, a gesture-driven cursor control system designed to allow users to interact with a computer using hand gestures captured through a standard webcam.
 
@@ -41,29 +41,6 @@ The major system components include:
 - **Cursor Controller** – performs operating system cursor actions using PyAutoGUI.
 - **Application Orchestration Module** – coordinates the full real-time processing loop.
 - **User Interface Layer** – planned PySide6 interface for calibration, settings, and user feedback.
-
-## Purpose of This Repository
-
-The purpose of this repository is to organize and manage the development of AeroPoint during Capstone II. It serves as the central location for all implementation, testing, documentation, and project tracking activities.
-
-This repository is intended to help the team:
-
-- Maintain a clear and professional project structure
-- Track development progress through issues and milestones
-- Collaborate efficiently using Git and GitHub/Azure DevOps workflows
-- Keep implementation aligned with the approved Capstone I design
-- Support future maintainability and extensibility of the system
-
-## Project Goals
-
-The main goals of AeroPoint are:
-
-- Provide real-time cursor control using hand gestures.
-- Support basic interaction features such as movement, clicking, and scrolling.
-- Improve accessibility for users who may have difficulty using traditional pointing devices.
-- Use standard consumer hardware, such as a webcam and laptop, without requiring specialized devices.
-- Keep all video processing local to protect user privacy.
-- Build a modular and testable system that can support future gesture expansion.
 
 ## Planned Capstone II Enhancements
 
