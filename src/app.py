@@ -1,7 +1,5 @@
-# app.py
 import time
 import cv2
-import mediapipe as mp
 
 from settings import *
 from camera_stream import open_camera, read_frame, show, key, close
@@ -9,6 +7,13 @@ from hand_tracker import HandTracker
 from calibrator import Calibrator
 from gestures import pinch, scroll_mode
 from controller import CursorController
+
+class HandLandmark:
+    THUMB_TIP = 4
+    INDEX_FINGER_TIP = 8
+    INDEX_FINGER_PIP = 6
+    MIDDLE_FINGER_TIP = 12
+    MIDDLE_FINGER_PIP = 10
 
 def clamp(v, lo, hi): return max(lo, min(hi, v))
 def lerp(a, b, t): return a + (b - a) * t
@@ -21,72 +26,71 @@ def map_to_screen(nx, ny, calib):
     rx = clamp(rx, 0.0, 1.0); ry = clamp(ry, 0.0, 1.0)
     return int(rx * controller.screen_w), int(ry * controller.screen_h)
 
+def draw_calibration_overlay(frame, calib):
+    progress = calib.progress()
+    cv2.putText(frame, "Calibration in progress",
+                (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 200, 255), 2)
+    cv2.putText(frame, "Move your index finger around the camera view",
+                (20, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+    cv2.putText(frame, "Cover top, bottom, left, and right areas",
+                (20, 100), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+    cv2.putText(frame, f"Progress: {progress}%",
+                (20, 130), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+
 if __name__ == "__main__":
+    cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(WINDOW_NAME, 960, 720)
     cap = open_camera(CAMERA_INDEX)
     tracker = HandTracker(max_num_hands=1)
     controller = CursorController()
-    calib = Calibrator(collect_seconds=3.0)
+    calib = Calibrator(collect_seconds=5.0)
 
-    # simple fps
     t0 = time.time(); fps = 0.0
 
-    # splash with crossfade
     from splash import show_until_space
-    def get_frame_for_splash():
-        f = read_frame(cap)
-        return f
-    if not show_until_space(get_frame_for_splash):
+    if not show_until_space(lambda: read_frame(cap)):
         close(cap); exit()
 
+    calib.start()
     sx = sy = None
 
     while True:
         frame = read_frame(cap)
         if frame is None:
-            break
+            continue
 
         result = tracker.process(frame)
 
         if result.multi_hand_landmarks:
-            lm = result.multi_hand_landmarks[0].landmark
-            idx_tip = lm[mp.solutions.hands.HandLandmark.INDEX_FINGER_TIP]
+            lm = result.multi_hand_landmarks[0]
+            idx_tip = lm[HandLandmark.INDEX_FINGER_TIP]
 
-            # calibration collection
             if calib.collecting:
-                remaining = calib.step(idx_tip.x, idx_tip.y)
-                cv2.putText(frame, f"Calibrating... move fingertip ({remaining:.1f}s)",
-                            (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,200,255), 2)
+                calib.step(idx_tip.x, idx_tip.y)
+                draw_calibration_overlay(frame, calib)
+            elif calib.calibrated:
+                cv2.putText(frame, "Calibration complete",
+                            (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
-            # map & smooth
             tx, ty = map_to_screen(idx_tip.x, idx_tip.y, calib)
             if sx is None:
                 sx, sy = tx, ty
             else:
-                sx = int(lerp(sx, tx, 1.0 - SMOOTHING))
-                sy = int(lerp(sy, ty, 1.0 - SMOOTHING))
+                if abs(tx - sx) > 20 or abs(ty - sy) > 20:
+                    sx = int(lerp(sx, tx, 1.0 - SMOOTHING))
+                    sy = int(lerp(sy, ty, 1.0 - SMOOTHING))
 
-            # gestures
-            is_pinch = pinch(lm, mp.solutions.hands.HandLandmark)
-            in_scroll = scroll_mode(lm, mp.solutions.hands.HandLandmark)
+            is_pinch = pinch(lm, HandLandmark)
+            in_scroll = scroll_mode(lm, HandLandmark)
 
-            # apply
             controller.move(sx, sy)
             controller.handle_pinch(is_pinch)
             controller.handle_scroll(in_scroll, sy)
 
-            # draw landmarks + ROI
             HandTracker.draw(frame, result)
-            if calib.calibrated:
-                x1 = int(calib.min[0] * frame.shape[1])
-                y1 = int(calib.min[1] * frame.shape[0])
-                x2 = int(calib.max[0] * frame.shape[1])
-                y2 = int(calib.max[1] * frame.shape[0])
-                cv2.rectangle(frame, (x1,y1), (x2,y2), (0,255,255), 2)
         else:
-            # lost hand → release drag
             controller.release_all()
 
-        # HUD
         if SHOW_FPS:
             t = time.time()
             fps = 0.9*fps + 0.1*(1.0 / max(1e-6, t - t0))
@@ -104,7 +108,7 @@ if __name__ == "__main__":
             calib.start()
         elif k == ord('r'):
             calib.reset()
-        elif k == 32:  # space → show splash again, then crossfade back
+        elif k == 32:
             from splash import show_until_space
             if not show_until_space(lambda: read_frame(cap)):
                 break

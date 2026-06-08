@@ -39,3 +39,9 @@ class Calibrator:
             self.collecting = False
             self.calibrated = True
             return 0.0
+
+    def progress(self):
+        if not self.collecting:
+            return 100 if self.calibrated else 0    
+        elapsed = time.time() - self.t0
+        return min(int((elapsed / self.dur) * 100), 100)
