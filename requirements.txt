@@ -1,0 +1,10 @@
+    opencv-python
+mediapipe
+pyautogui
+numpy
+pytest
+pytest-cov
+pytest-mock
+flake8
+pylint
+pip-audits
