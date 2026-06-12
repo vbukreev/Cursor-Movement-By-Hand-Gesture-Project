@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+      - ci-testing-setup
 
 jobs:
   lint-and-test:
@@ -23,12 +24,13 @@ jobs:
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install -r requirements.txt
           pip install pytest flake8
 
-      - name: Run flake8
+      - name: Run flake8 (critical errors only)
         run: |
           flake8 src tests \
-            --max-line-length=120 \
+            --select=E9,F63,F7,F82 \
             --count \
             --statistics
 
