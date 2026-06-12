@@ -7,5 +7,6 @@ pytest-cov
 pytest-mock
 flake8
 pylint
-pip-audits
+pip-audit
 
+git 
