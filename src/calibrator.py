@@ -1,6 +1,6 @@
-# calibrator.py
 import time
 from settings import CALIB_INIT_MIN, CALIB_INIT_MAX
+
 
 class Calibrator:
     def __init__(self, collect_seconds=3.0):
@@ -25,17 +25,34 @@ class Calibrator:
         self.max = CALIB_INIT_MAX[:]
 
     def step(self, nx, ny):
-        """Call while collecting; pass normalized fingertip."""
+        """Collect normalized fingertip coordinates during calibration."""
         if not self.collecting:
             return 0.0
-        t = time.time() - self.t0
-        if t < self.dur:
+
+        elapsed = time.time() - self.t0
+
+        if elapsed < self.dur:
             self.min[0] = min(self.min[0], nx)
             self.min[1] = min(self.min[1], ny)
             self.max[0] = max(self.max[0], nx)
             self.max[1] = max(self.max[1], ny)
-            return self.dur - t
-        else:
-            self.collecting = False
-            self.calibrated = True
-            return 0.0
+            return self.dur - elapsed
+
+        self.collecting = False
+        self.calibrated = True
+        return 0.0
+
+    def progress(self):
+        """Return calibration progress from 0.0 to 1.0."""
+        if not self.collecting:
+            return 1.0 if self.calibrated else 0.0
+
+        elapsed = time.time() - self.t0
+        return min(1.0, elapsed / self.dur)
+
+    def status_text(self):
+        if self.collecting:
+            return "Calibrating: move your index finger around the camera area"
+        if self.calibrated:
+            return "Calibration complete"
+        return "Press C to start calibration"

@@ -13,7 +13,10 @@ class CursorController:
         self.last_scroll_y = None
 
     def move(self, x, y):
-        pyautogui.moveTo(x, y, _pause=False)
+        try:
+            pyautogui.moveTo(x, y, _pause=False)
+        except pyautogui.FailSafeException:
+            pass
 
     def handle_pinch(self, is_pinch):
         now = time.time()
